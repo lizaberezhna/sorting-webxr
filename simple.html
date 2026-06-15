@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Sorting Reality - Проста версія</title>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+            font-family: Arial, sans-serif;
+        }
+        #controls {
+            position: absolute;
+            bottom: 20px;
+            left: 20px;
+            right: 20px;
+            background: rgba(0,0,0,0.8);
+            padding: 15px;
+            border-radius: 10px;
+            z-index: 100;
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+        button {
+            padding: 10px 20px;
+            font-size: 14px;
+            cursor: pointer;
+            background: #4a90e2;
+            color: white;
+            border: none;
+            border-radius: 5px;
+        }
+        button:hover {
+            background: #6aaef2;
+        }
+        #stats {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: rgba(0,0,0,0.7);
+            color: #0f0;
+            padding: 10px;
+            border-radius: 5px;
+            font-family: monospace;
+            z-index: 100;
+        }
+        #status {
+            position: absolute;
+            bottom: 100px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0,0,0,0.7);
+            color: #ff0;
+            padding: 10px 20px;
+            border-radius: 20px;
+            z-index: 100;
+            white-space: nowrap;
+        }
+    </style>
+</head>
+<body>
+    <div id="stats">
+        📊 Порівнянь: <span id="comparisons">0</span><br>
+        🔄 Перестановок: <span id="swaps">0</span><br>
+        ⏱️ Час: <span id="time">0.00</span>с
+    </div>
+    <div id="status">✅ Система готова! Натисніть "Сортувати"</div>
+    <div id="controls">
+        <button id="btn-generate">🔄 Новий масив</button>
+        <button id="btn-sort">🚀 Сортувати (Quick Sort)</button>
+        <button id="btn-ml">🤖 Auto-ML</button>
+    </div>
+
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://unpkg.com/three@0.128.0/build/three.module.js"
+            }
+        }
+    </script>
+
+    <script type="module">
+        import * as THREE from 'three';
+        
+        // Сцена
+        const scene = new THREE.Scene();
+        scene.background = new THREE.Color(0x1a1a2e);
+        
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+        camera.position.set(0, 1.5, 4);
+        
+        const renderer = new THREE.WebGLRenderer();
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        document.body.appendChild(renderer.domElement);
+        
+        // Світло
+        const light = new THREE.DirectionalLight(0xffffff, 1);
+        light.position.set(1, 2, 1);
+        scene.add(light);
+        scene.add(new THREE.AmbientLight(0x404060));
+        
+        // Дані
+        let currentArray = [8, 3, 6, 1, 9, 2, 7, 4, 5];
+        let blocks = [];
+        let isSorting = false;
+        let comparisons = 0, swaps = 0;
+        
+        function createBlocks() {
+            blocks.forEach(b => scene.remove(b));
+            blocks = [];
+            
+            currentArray.forEach((value, i) => {
+                const height = value / 12;
+                const geometry = new THREE.BoxGeometry(0.4, Math.max(0.2, height), 0.4);
+                const material = new THREE.MeshStandardMaterial({ color: 0x4a90e2 });
+                const cube = new THREE.Mesh(geometry, material);
+                
+                const x = (i - (currentArray.length - 1) / 2) * 0.6;
+                cube.position.set(x, height / 2 - 0.3, 0);
+                cube.userData = { value, index: i };
+                
+                // Текст
+                const canvas = document.createElement('canvas');
+                canvas.width = 64;
+                canvas.height = 64;
+                const ctx = canvas.getContext('2d');
+                ctx.fillStyle = 'white';
+                ctx.font = 'bold 40px Arial';
+                ctx.fillText(value, 15, 45);
+                const texture = new THREE.CanvasTexture(canvas);
+                const textMat = new THREE.MeshBasicMaterial({ map: texture });
+                const textPlane = new THREE.Mesh(new THREE.PlaneGeometry(0.25, 0.25), textMat);
+                textPlane.position.set(0, height / 2 + 0.08, 0.21);
+                cube.add(textPlane);
+                
+                scene.add(cube);
+                blocks.push(cube);
+            });
+        }
+        
+        function updateBlocks() {
+            currentArray.forEach((value, i) => {
+                const height = value / 12;
+                blocks[i].scale.y = height / (blocks[i].geometry.parameters.height || 0.2);
+                blocks[i].position.y = height / 2 - 0.3;
+                
+                // Оновлюємо текст
+                const textMesh = blocks[i].children[0];
+                if (textMesh) {
+                    const canvas = document.createElement('canvas');
+                    canvas.width = 64;
+                    canvas.height = 64;
+                    const ctx = canvas.getContext('2d');
+                    ctx.fillStyle = 'white';
+                    ctx.font = 'bold 40px Arial';
+                    ctx.fillText(value, 15, 45);
+                    textMesh.material.map.needsUpdate = true;
+                }
+                blocks[i].userData.value = value;
+            });
+        }
+        
+        async function quickSortVisual(array, left, right) {
+            if (left >= right) return;
+            
+            let pivot = array[right];
+            let i = left - 1;
+            
+            for (let j = left; j < right; j++) {
+                comparisons++;
+                document.getElementById('comparisons').textContent = comparisons;
+                
+                // Підсвітка
+                blocks[j].material.color.setHex(0xffaa00);
+                blocks[right].material.color.setHex(0xff6600);
+                await new Promise(r => setTimeout(r, 200));
+                
+                if (array[j] <= pivot) {
+                    i++;
+                    [array[i], array[j]] = [array[j], array[i]];
+                    swaps++;
+                    document.getElementById('swaps').textContent = swaps;
+                    updateBlocks();
+                    await new Promise(r => setTimeout(r, 200));
+                }
+                
+                blocks[j].material.color.setHex(0x4a90e2);
+                blocks[right].material.color.setHex(0x4a90e2);
+            }
+            
+            [array[i + 1], array[right]] = [array[right], array[i + 1]];
+            swaps++;
+            updateBlocks();
+            await new Promise(r => setTimeout(r, 200));
+            
+            await quickSortVisual(array, left, i);
+            await quickSortVisual(array, i + 2, right);
+        }
+        
+        function generateRandomArray() {
+            const n = 8 + Math.floor(Math.random() * 4);
+            currentArray = Array.from({ length: n }, () => 3 + Math.floor(Math.random() * 10));
+            createBlocks();
+            comparisons = 0;
+            swaps = 0;
+            document.getElementById('comparisons').textContent = '0';
+            document.getElementById('swaps').textContent = '0';
+            document.getElementById('status').textContent = '🔄 Новий масив згенеровано';
+        }
+        
+        async function startSort() {
+            if (isSorting) return;
+            isSorting = true;
+            comparisons = 0;
+            swaps = 0;
+            document.getElementById('status').textContent = '🏃 Сортування...';
+            const startTime = performance.now();
+            
+            const arrayCopy = [...currentArray];
+            await quickSortVisual(arrayCopy, 0, arrayCopy.length - 1);
+            currentArray = arrayCopy;
+            
+            const elapsed = (performance.now() - startTime) / 1000;
+            document.getElementById('time').textContent = elapsed.toFixed(3);
+            document.getElementById('status').textContent = `✅ Відсортовано за ${elapsed.toFixed(2)}с`;
+            isSorting = false;
+        }
+        
+        function mlChoice() {
+            const n = currentArray.length;
+            let inversions = 0;
+            for (let i = 0; i < n; i++) {
+                for (let j = i + 1; j < n; j++) {
+                    if (currentArray[i] > currentArray[j]) inversions++;
+                }
+            }
+            const ratio = inversions / (n * (n - 1) / 2);
+            
+            if (n < 6) {
+                document.getElementById('status').textContent = '🧠 ML обрав: Bubble Sort (малий масив)';
+            } else if (ratio > 0.7) {
+                document.getElementById('status').textContent = '🧠 ML обрав: Quick Sort (багато інверсій)';
+            } else {
+                document.getElementById('status').textContent = '🧠 ML обрав: Insertion Sort (майже відсортовано)';
+            }
+            startSort();
+        }
+        
+        // Події
+        document.getElementById('btn-generate').addEventListener('click', () => {
+            if (isSorting) return;
+            generateRandomArray();
+        });
+        document.getElementById('btn-sort').addEventListener('click', () => {
+            if (isSorting) return;
+            startSort();
+        });
+        document.getElementById('btn-ml').addEventListener('click', () => {
+            if (isSorting) return;
+            mlChoice();
+        });
+        
+        // Запуск
+        generateRandomArray();
+        
+        function animate() {
+            renderer.render(scene, camera);
+            requestAnimationFrame(animate);
+        }
+        animate();
+        
+        console.log('✅ Проста версія працює!');
+    </script>
+</body>
+</html>
