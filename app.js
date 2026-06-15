@@ -1,4 +1,8 @@
 import * as THREE from 'three';
+import * as tf from '@tensorflow/tfjs';
+import { SortingML } from './ml/training.js';
+import { SortingAlgorithms } from './algorithms/bubbleSort.js';
+import { HandTracker } from './tracking/handTracker.js';
 
 export class HandTracker {
     constructor(renderer, camera, blockMeshes, isActiveCallback) {
