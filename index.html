@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sorting Reality - WebXR Sorting with ML & Hand Tracking</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            overflow: hidden;
+            background: #1a1a2e;
+        }
+
+        #info {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            color: white;
+            background: rgba(0,0,0,0.8);
+            padding: 15px;
+            border-radius: 10px;
+            z-index: 100;
+            font-size: 14px;
+            font-family: monospace;
+            pointer-events: none;
+        }
+
+        #controls {
+            position: absolute;
+            bottom: 20px;
+            left: 20px;
+            right: 20px;
+            background: rgba(0,0,0,0.9);
+            padding: 15px;
+            border-radius: 10px;
+            z-index: 100;
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            justify-content: center;
+            pointer-events: auto;
+        }
+
+        button {
+            background: #4a4a6a;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.3s;
+        }
+
+        button:hover {
+            background: #6a6a8a;
+            transform: translateY(-2px);
+        }
+
+        button.active {
+            background: #00b4d8;
+            box-shadow: 0 0 10px rgba(0,180,216,0.5);
+        }
+
+        #stats {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: rgba(0,0,0,0.8);
+            color: #00ff00;
+            padding: 15px;
+            border-radius: 10px;
+            font-family: monospace;
+            font-size: 12px;
+            z-index: 100;
+            pointer-events: none;
+            text-align: right;
+        }
+
+        .status {
+            position: absolute;
+            bottom: 100px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0,0,0,0.9);
+            color: #ffd700;
+            padding: 10px 20px;
+            border-radius: 20px;
+            font-size: 14px;
+            z-index: 100;
+            white-space: nowrap;
+            pointer-events: none;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .ml-badge {
+            background: #ff6b6b;
+            animation: pulse 2s infinite;
+        }
+    </style>
+</head>
+<body>
+    <div id="info">
+        🤖 Sorting Reality | Hand Tracking + ML<br>
+        👆 Pinch щоб взяти блок | ✋ Долоня вперед - запуск
+    </div>
+    
+    <div id="stats">
+        ⚡ Статистика<br>
+        📊 Порівнянь: <span id="comparisons">0</span><br>
+        🔄 Перестановок: <span id="swaps">0</span><br>
+        ⏱️ Час: <span id="time">0.00</span>с<br>
+        🧠 ML вибір: <span id="ml-choice">-</span>
+    </div>
+
+    <div id="controls">
+        <button id="btn-generate">🔄 Новий масив</button>
+        <button id="btn-manual">✋ Ручний режим</button>
+        <button id="btn-auto">🤖 Auto-ML режим</button>
+        <button id="btn-demo">🎬 Демонстрація</button>
+        <button id="btn-stop">⏹️ Стоп</button>
+    </div>
+
+    <div class="status" id="status">
+        Готовий до роботи...
+    </div>
+
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://unpkg.com/three@0.128.0/build/three.module.js",
+                "@tensorflow/tfjs": "https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.15.0/dist/tf.min.js"
+            }
+        }
+    </script>
+    <script type="module" src="app.js"></script>
+</body>
+</html>
